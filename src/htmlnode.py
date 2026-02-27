@@ -48,6 +48,7 @@ class ParentNode(HTMLNode):
 		super().__init__(tag, None, children, props)
 
 	def to_html(self):
+		print(f"TO HTML: {self}")
 		if self.tag == None or self.tag == "":
 			raise ValueError("all parent nodes must have a tag")
 		if self.children == None or self.children == "" or len(self.children) == 0:
@@ -71,7 +72,7 @@ def text_node_to_html_node(text_node):
 	elif text_node.text_type == TextType.LINK:
 		return_value = LeafNode("a", text_node.text, {'href': text_node.url})
 	elif text_node.text_type == TextType.IMAGE:
-		return_value = LeafNode("img", "", {'src': text_node.url, 'alt': text_node.text})
+		return_value = LeafNode("img", text_node.text, {'src': text_node.url, 'alt': text_node.text})
 	else:
 		raise Exception("Unknown type")
 	return return_value
@@ -80,15 +81,13 @@ def markdown_to_html_node(markdown):
 	blocks = markdown_to_blocks(markdown)
 	return_value = ParentNode('div', [])
 	for block in blocks:
-		children_htmlnodes = []
 		blocktype = block_to_block_type(block)
 		if blocktype == BlockType.PARAGRAPH:
 			block = block.replace('\n',' ')
-			textnodes = text_to_textnodes(block)
-			for textnode in textnodes:
-				children_htmlnodes.append(text_node_to_html_node(textnode))
+			children_htmlnodes = text_to_children(block)
 			block_parent = ParentNode('p', children_htmlnodes)
 		elif blocktype == BlockType.CODE:
+			children_htmlnodes = []
 			block = block[3:-3]
 			if block[:1] == "\n":
 				block = block[1:]
@@ -106,21 +105,43 @@ def markdown_to_html_node(markdown):
 			block_parent = LeafNode('blockquote',block)
 		elif blocktype == BlockType.UNORDERED_LIST:
 			lines = block.split('\n')
+			blocklines = []
 			for line in lines:
 				line = line[1:].strip()
-				children_htmlnodes.append(LeafNode('li',line))
-			block_parent = ParentNode('ul', children_htmlnodes)
+				nodes = text_to_children(line.strip())
+				linenodes = []
+				for node in nodes:
+					linenodes.append(node)
+				listitem_htmlnodes = ParentNode('li',linenodes)
+				blocklines.append(listitem_htmlnodes)
+			block_parent = ParentNode('ul', blocklines)
 		elif blocktype == BlockType.ORDERED_LIST:
 			lines = block.split('\n')
+			blocklines = []
 			for line in lines:
+				print(f"line: {line}")
 				splitline = line.split('.', 1)
-				children_htmlnodes.append(LeafNode('li',splitline[1].strip()))
-			block_parent = ParentNode('ol', children_htmlnodes)
+				nodes = text_to_children(splitline[1].strip())
+				linenodes = []
+				for node in nodes:
+					linenodes.append(node)
+				listitem_htmlnodes = ParentNode('li',linenodes)
+				blocklines.append(listitem_htmlnodes)
+			block_parent = ParentNode('ol', blocklines)
 		elif blocktype == BlockType.HEADING:
+			children_htmlnodes = []
 			heading_count = len(block) - len(block.lstrip('#'))
 			heading_level = "h" + str(heading_count)
-			block_parent = LeafNode(heading_level, block.lstrip('#').strip())
+			children_htmlnodes = text_to_children(block.lstrip('#').strip())
+			block_parent = ParentNode(heading_level, children_htmlnodes)
 		else:
 			raise Exception('Unknown BlockType')
 		return_value.children.append(block_parent)
 	return return_value
+
+def text_to_children(block):
+	children_nodes = []
+	textnodes = text_to_textnodes(block)
+	for textnode in textnodes:
+		children_nodes.append(text_node_to_html_node(textnode))
+	return children_nodes
