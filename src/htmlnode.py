@@ -48,7 +48,6 @@ class ParentNode(HTMLNode):
 		super().__init__(tag, None, children, props)
 
 	def to_html(self):
-		print(f"TO HTML: {self}")
 		if self.tag == None or self.tag == "":
 			raise ValueError("all parent nodes must have a tag")
 		if self.children == None or self.children == "" or len(self.children) == 0:
@@ -119,7 +118,6 @@ def markdown_to_html_node(markdown):
 			lines = block.split('\n')
 			blocklines = []
 			for line in lines:
-				print(f"line: {line}")
 				splitline = line.split('.', 1)
 				nodes = text_to_children(splitline[1].strip())
 				linenodes = []

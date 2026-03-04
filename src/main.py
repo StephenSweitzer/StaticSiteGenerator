@@ -6,7 +6,7 @@ from htmlnode import HTMLNode, markdown_to_html_node
 def main():
 	print("Running...")
 	copy_static_to_public()
-	generate_page("./content/index.md", "./template.html", "./public/index.html")
+	generate_pages_recursive("./content", "./template.html", "./public")
 
 def copy_static_to_public():
 	if not os.path.exists('./public'):
@@ -66,5 +66,21 @@ def generate_page(from_path, template_path, dest_path):
 			f.write(template)
 	except Exception as e:
 		print(f"Error: an error occurred when writing the file contents: {e}")
+
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+	print(f"Scanning content directory: {dir_path_content}")
+	if not os.path.exists(dir_path_content) or os.path.isfile(dir_path_content):
+		raise Exception("could not find directory {dir_path_content}")
+	if not os.path.exists(template_path):
+		raise Exception(f"{template_path} cannot be found")
+	files = os.listdir(dir_path_content)
+	for file in files:
+		if not os.path.isfile(os.path.join(dir_path_content, file)):
+			print(f"Found directory: {file}")
+			generate_pages_recursive(os.path.join(dir_path_content, file), template_path, os.path.join(dest_dir_path, file))
+		elif file[0] != ".":
+			sourcename = os.path.join(dir_path_content, file)
+			destinationname = os.path.join(dest_dir_path, file[:-2] + "html")
+			generate_page(sourcename, template_path, destinationname)
 
 main()

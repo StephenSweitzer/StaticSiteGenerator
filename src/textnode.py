@@ -45,7 +45,8 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
 				raise Exception("invalid Markdown syntax")
 			next_node = TextType.TEXT
 			for split_node in split_nodes:
-				new_nodes.append(TextNode(split_node,next_node))
+				if len(split_node) > 0:
+					new_nodes.append(TextNode(split_node,next_node))
 				if next_node == TextType.TEXT:
 					next_node = text_type
 				else:
