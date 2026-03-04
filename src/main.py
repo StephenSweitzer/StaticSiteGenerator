@@ -1,3 +1,4 @@
+import sys
 import re
 import os
 import shutil
@@ -5,19 +6,24 @@ from htmlnode import HTMLNode, markdown_to_html_node
 
 def main():
 	print("Running...")
-	copy_static_to_public()
-	generate_pages_recursive("./content", "./template.html", "./public")
+	if len(sys.argv) != 2:
+		basepath = "/"
+	else:
+		basepath = sys.argv[1]
+	print(f"Base path: {basepath}")
+	copy_static_to_docs()
+	generate_pages_recursive("./content", "./template.html", "./docs", basepath)
 
-def copy_static_to_public():
-	if not os.path.exists('./public'):
-		raise Exception("public directory cannot be found")
-	print("public directory found")
-	shutil.rmtree('./public')
-	print("deleted public directory")
-	os.mkdir('./public')
-	print("recreated public directory")
-	copy_contents('./static', './public')
-	print("copied contents to public directory")
+def copy_static_to_docs():
+	if not os.path.exists('./docs'):
+		raise Exception("docs directory cannot be found")
+	print("docs directory found")
+	shutil.rmtree('./docs')
+	print("deleted docs directory")
+	os.mkdir('./docs')
+	print("recreated docs directory")
+	copy_contents('./static', './docs')
+	print("copied contents to docs directory")
 
 def copy_contents(source, destination):
 	print(f"copying: {source} to {destination}")
@@ -45,7 +51,7 @@ def extract_title(markdown):
 			return title
 	raise Exception("no heading 1 in content for title")
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath):
 	print(f"Generating page from {from_path} to {dest_path} using {template_path}")
 	if not os.path.exists(from_path):
 		raise Exception(f"{from_path} cannot be found")
@@ -59,6 +65,7 @@ def generate_page(from_path, template_path, dest_path):
 	html = htmlnode.to_html()
 	title = extract_title(markdown)
 	template = template.replace("{{ Title }}", title).replace("{{ Content }}",html)
+	template = template.replace("href=\"/", "href=\"" + basepath).replace("src=\"/", "src=\"" + basepath)
 	print(f"HTML Page: {template}")
 	try:
 		os.makedirs(os.path.dirname(dest_path), exist_ok=True)
@@ -67,7 +74,7 @@ def generate_page(from_path, template_path, dest_path):
 	except Exception as e:
 		print(f"Error: an error occurred when writing the file contents: {e}")
 
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath):
 	print(f"Scanning content directory: {dir_path_content}")
 	if not os.path.exists(dir_path_content) or os.path.isfile(dir_path_content):
 		raise Exception("could not find directory {dir_path_content}")
@@ -77,10 +84,10 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
 	for file in files:
 		if not os.path.isfile(os.path.join(dir_path_content, file)):
 			print(f"Found directory: {file}")
-			generate_pages_recursive(os.path.join(dir_path_content, file), template_path, os.path.join(dest_dir_path, file))
+			generate_pages_recursive(os.path.join(dir_path_content, file), template_path, os.path.join(dest_dir_path, file), basepath)
 		elif file[0] != ".":
 			sourcename = os.path.join(dir_path_content, file)
 			destinationname = os.path.join(dest_dir_path, file[:-2] + "html")
-			generate_page(sourcename, template_path, destinationname)
+			generate_page(sourcename, template_path, destinationname, basepath)
 
 main()
